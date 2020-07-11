@@ -19,6 +19,17 @@ target_include_directories(heap_array
         include
 )
 
-target_compile_features(heap_array INTERFACE cxx_std_17)
+target_compile_features(heap_array
+    INTERFACE 
+        cxx_std_17
+)
+
+target_compile_options(heap_array
+    INTERFACE
+        -Wall
+        -Wextra
+        -Wpedantic
+        -Werror
+)
 
 add_subdirectory(test)
