@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <initializer_list>
 #include <limits>
+#include <new>
 #include <type_traits>
 #include <utility>
 
@@ -15,6 +16,14 @@ class heap_array final {
       typename std::aligned_storage<sizeof(T), alignof(T)>::type;
   storage_type *storage_;
   SizeType size_;
+
+  T *to_value_type_pointer(storage_type *storage_pointer) {
+    return std::launder(reinterpret_cast<value_type *>(storage_pointer));
+  }
+
+  const T *to_value_type_pointer(storage_type *storage_pointer) const {
+    return std::launder(reinterpret_cast<value_type *>(storage_pointer));
+  }
 
 public:
   using value_type = T;
@@ -47,13 +56,13 @@ public:
   const value_type &operator[](const size_type pos) const {
     assert(pos < size_);
     // note: needs std::launder as of C++17
-    return *reinterpret_cast<const value_type *>(&storage_[pos]);
+    return *to_value_type_pointer(&storage_[pos]);
   }
 
   value_type &operator[](const size_type pos) {
     assert(pos < size_);
     // note: needs std::launder as of C++17
-    return *reinterpret_cast<value_type *>(&storage_[pos]);
+    return *to_value_type_pointer(&storage_[pos]);
   }
 
   size_type size() const { return size_; }
@@ -61,7 +70,7 @@ public:
   ~heap_array() {
     // TODO use std::launder
     for (size_type i{}; i < size_; ++i) {
-      reinterpret_cast<value_type *>(storage_ + i)->~value_type();
+      to_value_type_pointer(storage_ + i)->~value_type();
     }
     delete[] storage_;
   }
