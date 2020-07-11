@@ -28,6 +28,14 @@ class heap_array final {
 public:
   using value_type = T;
   using size_type = SizeType;
+  using reference = value_type &;
+  using const_reference = const value_type &;
+  using pointer = value_type *;
+  using const_pointer = const value_type *;
+  using iterator = void; // TODO implement this
+  using const_iterator = void;
+  using reverse_iterator = void;
+  using const_reverse_iterator = void;
 
   explicit heap_array(const size_type size) : storage_{}, size_{size} {
     assert(size_ > 0);
