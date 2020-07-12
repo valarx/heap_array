@@ -150,9 +150,8 @@ public:
   using const_pointer = const T *;
   using iterator = random_access_iterator<false>;
   using const_iterator = random_access_iterator<true>;
-  using reverse_iterator = random_access_iterator<false>; // TODO implement this
-  using const_reverse_iterator =
-      random_access_iterator<true>; // TODO implement this
+  using reverse_iterator = std::reverse_iterator<iterator>;
+  using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
   explicit heap_array(const size_type size) : storage_{}, size_{size} {
     if (size_ > 0) {
@@ -160,59 +159,28 @@ public:
     }
   }
 
-  heap_array(std::initializer_list<value_type> init)
-      : storage_{}, size_{init.size()} {
+  heap_array(std::initializer_list<value_type> init) : storage_{}, size_{} {
     assert(init.size() <= std::numeric_limits<size_type>::max());
-    if (size_ > 0) {
-      storage_ = new storage_type[init.size()];
-      size_type idx{};
-      for (auto &val : init) {
-        new (storage_ + idx) value_type(val);
-        ++idx;
-      }
-    }
+    initialize_from(init.begin(), init.size());
   }
 
-  template <typename OtherSizeType>
-  heap_array(const heap_array<value_type, OtherSizeType> &other)
-      : storage_{}, size_{} {
-    *this = other;
+  heap_array(const heap_array &other) : storage_{}, size_{} {
+    initialize_from(other, other.size_);
   }
 
-  template <typename OtherSizeType>
-  heap_array<value_type, size_type>
-  operator=(const heap_array<value_type, OtherSizeType> &other) {
-    assert(other.size_ <= std::numeric_limits<size_type>::max());
-    storage_type new_storage{};
-    if (other.size_ > 0) {
-      new_storage = new storage_type[other.size_];
-      size_type idx{};
-      for (const auto &val : other) {
-        new_storage[idx] = val;
-      }
-    }
-    reset_storage();
-    size_ = static_cast<size_type>(other.size_);
-    storage_ = new_storage;
+  heap_array &operator=(const heap_array &other) {
+    initialize_from(other, other.size_);
     return *this;
   }
 
-  template <typename OtherSizeType>
-  heap_array(heap_array<value_type, OtherSizeType> &&other)
-      : storage_{}, size_{} {
-    assert(other.size_ <= std::numeric_limits<size_type>::max());
-
+  heap_array(heap_array &&other) : storage_{}, size_{} {
     size_ = static_cast<size_type>(other.size_);
     storage_ = other.storage_;
     other.size_ = 0;
     other.storage_ = nullptr;
   }
 
-  template <typename OtherSizeType>
-  heap_array<value_type, size_type>
-  operator=(heap_array<value_type, OtherSizeType> &&other) {
-    assert(other.size_ <= std::numeric_limits<size_type>::max());
-
+  heap_array<value_type, size_type> &operator=(heap_array &&other) {
     size_ = static_cast<size_type>(other.size_);
     storage_ = other.storage_;
     other.size_ = 0;
@@ -276,6 +244,20 @@ public:
     return const_iterator{to_value_type_pointer(storage_)};
   }
 
+  reverse_iterator rbegin() noexcept {
+    return reverse_iterator{iterator{to_value_type_pointer(storage_ + size_)}};
+  }
+
+  const_reverse_iterator rbegin() const noexcept {
+    return const_reverse_iterator{
+        const_iterator{to_value_type_pointer(storage_ + size_)}};
+  }
+
+  const_reverse_iterator crbegin() const noexcept {
+    return const_reverse_iterator{
+        const_iterator{to_value_type_pointer(storage_ + size_)}};
+  }
+
   iterator end() noexcept {
     return iterator{to_value_type_pointer(storage_ + size_)};
   }
@@ -286,6 +268,20 @@ public:
 
   const_iterator cend() const noexcept {
     return const_iterator{to_value_type_pointer(storage_ + size_)};
+  }
+
+  reverse_iterator rend() noexcept {
+    return reverse_iterator{iterator{to_value_type_pointer(storage_)}};
+  }
+
+  const_reverse_iterator rend() const noexcept {
+    return const_reverse_iterator{
+        const_iterator{to_value_type_pointer(storage_)}};
+  }
+
+  const_reverse_iterator crend() const noexcept {
+    return const_reverse_iterator{
+        const_iterator{to_value_type_pointer(storage_)}};
   }
 
   bool empty() const noexcept { return size_ == 0; }
@@ -315,6 +311,22 @@ private:
       to_value_type_pointer(storage_ + i)->~value_type();
     }
     delete[] storage_;
+    size_ = 0;
+    storage_ = nullptr;
+  }
+
+  template <typename Other>
+  void initialize_from(Other &&other, const size_type size) {
+    storage_type *storage{};
+    if (size > 0) {
+      storage = new storage_type[size];
+      for (size_type idx{}; idx < size; ++idx) {
+        new (storage + idx) value_type(other[idx]);
+      }
+    }
+    reset_storage();
+    size_ = size;
+    storage_ = storage;
   }
 };
 

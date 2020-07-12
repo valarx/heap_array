@@ -12,19 +12,13 @@ TEST_CASE("It is possible to create heap_array by providing size",
 
 TEST_CASE("It is possible to create heap_array from initializer list",
           "[construction][initializer list][pod]") {
-  const vlrx::heap_array<int> test_array{1, 2, 3, 4, 5};
+  vlrx::heap_array<int> test_array{1, 2, 3, 4, 5};
   REQUIRE(test_array.size() == 5);
   REQUIRE(test_array[0] == 1);
   REQUIRE(test_array[1] == 2);
   REQUIRE(test_array[2] == 3);
   REQUIRE(test_array[3] == 4);
   REQUIRE(test_array[4] == 5);
-}
-
-TEST_CASE("It is possible to modify data via subscript operator",
-          "[modification][pod]") {
-  vlrx::heap_array<int> test_array(5);
-  REQUIRE(test_array.size() == 5);
   test_array[4] = 3;
   REQUIRE(test_array[4] == 3);
 }
@@ -44,7 +38,7 @@ TEST_CASE("Front and back on non-empty containers return proper data",
 }
 
 TEST_CASE(
-    "Empty for non-empty containers returns false and for empty returns true",
+    "Empty for non-empty containers returns false and for empty returns true ",
     "[empty]") {
   const vlrx::heap_array<int> test_array{1, 2, 3};
   REQUIRE(test_array.empty() == false);
@@ -52,7 +46,7 @@ TEST_CASE(
   REQUIRE(test_array1.empty() == true);
 }
 
-TEST_CASE("Data for non-empty containers returns pointer to the 0-th element",
+TEST_CASE("Data for non-empty containers returns pointer to the 0-th element ",
           "[data]") {
   vlrx::heap_array<int> test_array{1, 2, 3};
   REQUIRE(test_array.data() != nullptr);
@@ -71,7 +65,7 @@ TEST_CASE("Begin and end return proper iterators, iterators are incrementable",
   REQUIRE(iter == test_array.end());
 }
 
-TEST_CASE("It is possible to add or substract number from the iterator to get "
+TEST_CASE("It is possible to add or substract number from the iterator to get"
           "another iterator. It is possible to substract iterators",
           "[iterators][arithmetic]") {
   vlrx::heap_array<int> test_array{1, 2, 3, 4, 5};
@@ -106,9 +100,26 @@ TEST_CASE("Comparison operators for iterator", "[iterator][comparison]") {
 TEST_CASE("Copy/move constructors/assignment operators work", "[copy][move]") {
   vlrx::heap_array<int> test_array{1, 2, 3, 4, 5};
   vlrx::heap_array<int> moved_to{std::move(test_array)};
-  REQUIRE(test_array.begin() == test_array.end());
   REQUIRE(moved_to[1] == 2);
   vlrx::heap_array<int> copy{moved_to};
   REQUIRE(moved_to[1] == 2);
   REQUIRE(copy[1] == 2);
+}
+
+TEST_CASE("Reverse iterators are present", "[reverse][iterators]") {
+  vlrx::heap_array<int> test_array{1, 2, 3, 4, 5};
+  REQUIRE(*test_array.rbegin() == 5);
+  const vlrx::heap_array<int> const_test_array{1, 2, 3, 4, 5};
+  REQUIRE(*const_test_array.rbegin() == 5);
+  REQUIRE(*--test_array.rend() == 1);
+  REQUIRE(*--const_test_array.rend() == 1);
+}
+
+TEST_CASE("Range based for loop", "[range for]") {
+  vlrx::heap_array<int> test_array{1, 2, 3, 4, 5};
+  std::uint64_t idx{};
+  for (const auto &val : test_array) {
+    REQUIRE(val == test_array[idx]);
+    ++idx;
+  }
 }

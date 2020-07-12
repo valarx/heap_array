@@ -8,6 +8,16 @@ target_sources(unit_tests
         unit_tests.cpp
 )
 
+target_compile_options(unit_tests
+    PRIVATE
+        -fsanitize=address
+)
+
+target_link_options(unit_tests
+    PRIVATE
+        -fsanitize=address
+)
+
 target_include_directories(unit_tests
     SYSTEM
         PRIVATE
