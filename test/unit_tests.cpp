@@ -102,3 +102,13 @@ TEST_CASE("Comparison operators for iterator", "[iterator][comparison]") {
   REQUIRE(test_array.begin() <= test_array.begin() + 1);
   REQUIRE(test_array.begin() + 1 >= test_array.begin());
 }
+
+TEST_CASE("Copy/move constructors/assignment operators work", "[copy][move]") {
+  vlrx::heap_array<int> test_array{1, 2, 3, 4, 5};
+  vlrx::heap_array<int> moved_to{std::move(test_array)};
+  REQUIRE(test_array.begin() == test_array.end());
+  REQUIRE(moved_to[1] == 2);
+  vlrx::heap_array<int> copy{moved_to};
+  REQUIRE(moved_to[1] == 2);
+  REQUIRE(copy[1] == 2);
+}

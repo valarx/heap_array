@@ -10,6 +10,7 @@
 #include <type_traits>
 #include <utility>
 
+#include <iostream>
 namespace vlrx {
 
 template <typename T, typename SizeType = std::uint64_t>
@@ -164,18 +165,59 @@ public:
     assert(init.size() <= std::numeric_limits<size_type>::max());
     if (size_ > 0) {
       storage_ = new storage_type[init.size()];
-      size_type idx{0};
+      size_type idx{};
       for (auto &val : init) {
-        new (storage_ + idx) value_type(val); // TODO is this correct?
+        new (storage_ + idx) value_type(val);
         ++idx;
       }
     }
   }
 
   template <typename OtherSizeType>
-  heap_array(const heap_array<T, OtherSizeType> &other) {
+  heap_array(const heap_array<value_type, OtherSizeType> &other)
+      : storage_{}, size_{} {
+    *this = other;
+  }
+
+  template <typename OtherSizeType>
+  heap_array<value_type, size_type>
+  operator=(const heap_array<value_type, OtherSizeType> &other) {
     assert(other.size_ <= std::numeric_limits<size_type>::max());
-    // TODO implement this
+    storage_type new_storage{};
+    if (other.size_ > 0) {
+      new_storage = new storage_type[other.size_];
+      size_type idx{};
+      for (const auto &val : other) {
+        new_storage[idx] = val;
+      }
+    }
+    reset_storage();
+    size_ = static_cast<size_type>(other.size_);
+    storage_ = new_storage;
+    return *this;
+  }
+
+  template <typename OtherSizeType>
+  heap_array(heap_array<value_type, OtherSizeType> &&other)
+      : storage_{}, size_{} {
+    assert(other.size_ <= std::numeric_limits<size_type>::max());
+
+    size_ = static_cast<size_type>(other.size_);
+    storage_ = other.storage_;
+    other.size_ = 0;
+    other.storage_ = nullptr;
+  }
+
+  template <typename OtherSizeType>
+  heap_array<value_type, size_type>
+  operator=(heap_array<value_type, OtherSizeType> &&other) {
+    assert(other.size_ <= std::numeric_limits<size_type>::max());
+
+    size_ = static_cast<size_type>(other.size_);
+    storage_ = other.storage_;
+    other.size_ = 0;
+    other.storage_ = nullptr;
+    return *this;
   }
 
   const_reference at(const size_type pos) const {
