@@ -90,3 +90,15 @@ TEST_CASE("It is possible to add or substract number from the iterator to get "
   REQUIRE(iter2[2] == 3);
   REQUIRE(test_array.end() - test_array.begin() == 5);
 }
+
+TEST_CASE("Comparison operators for iterator", "[iterator][comparison]") {
+  const vlrx::heap_array<int> test_array{1, 2, 3, 4, 5};
+  REQUIRE(test_array.begin() != test_array.end());
+  REQUIRE(test_array.begin() == test_array.begin());
+  REQUIRE(test_array.begin() < test_array.end());
+  REQUIRE(test_array.end() > test_array.begin());
+  REQUIRE(test_array.begin() <= test_array.begin());
+  REQUIRE(test_array.begin() >= test_array.begin());
+  REQUIRE(test_array.begin() <= test_array.begin() + 1);
+  REQUIRE(test_array.begin() + 1 >= test_array.begin());
+}
