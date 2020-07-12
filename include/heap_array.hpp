@@ -10,7 +10,6 @@
 #include <type_traits>
 #include <utility>
 
-#include <iostream>
 namespace vlrx {
 
 template <typename T, typename SizeType = std::uint64_t>
