@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <cassert>
 #include <cstdint>
 #include <initializer_list>
@@ -296,7 +297,68 @@ public:
     initialize_from([&val](const size_type) { return val; }, size_);
   }
 
+  void swap(heap_array &other) {
+    const auto temp_storage = storage_;
+    const auto temp_size = size_;
+    storage_ = other.storage_;
+    size_ = other.size_;
+    other.size_ = temp_size;
+    other.storage_ = temp_storage;
+  }
+
+  template <typename VType, typename SType>
+  friend void swap(heap_array<VType, SType> &lhs,
+                   heap_array<VType, SType> &rhs) {
+    lhs.swap(rhs);
+  }
+
   ~heap_array() { reset_storage(); }
+
+  template <typename VType, typename SType>
+  friend bool operator==(const heap_array<VType, SType> &lhs,
+                         const heap_array<VType, SType> &rhs) {
+    return lhs.size_ == rhs.size_ && [&lhs, &rhs]() {
+      SType idx{};
+      for (const auto &val : lhs) {
+        if (val != rhs[idx]) {
+          return false;
+        }
+        ++idx;
+      }
+      return true;
+    }();
+  }
+
+  template <typename VType, typename SType>
+  friend bool operator!=(const heap_array<VType, SType> &lhs,
+                         const heap_array<VType, SType> &rhs) {
+    return !(lhs == rhs);
+  }
+
+  template <typename VType, typename SType>
+  friend bool operator<(const heap_array<VType, SType> &lhs,
+                        const heap_array<VType, SType> &rhs) {
+    return std::lexicographical_compare(lhs.begin(), lhs.end(), rhs.begin(),
+                                        rhs.end());
+  }
+
+  template <typename VType, typename SType>
+  friend bool operator>(const heap_array<VType, SType> &lhs,
+                        const heap_array<VType, SType> &rhs) {
+    return rhs < lhs;
+  }
+
+  template <typename VType, typename SType>
+  friend bool operator<=(const heap_array<VType, SType> &lhs,
+                         const heap_array<VType, SType> &rhs) {
+    return !(lhs > rhs);
+  }
+
+  template <typename VType, typename SType>
+  friend bool operator>=(const heap_array<VType, SType> &lhs,
+                         const heap_array<VType, SType> &rhs) {
+    return !(lhs < rhs);
+  }
 
 private:
   using storage_type = typename std::aligned_storage<sizeof(value_type),

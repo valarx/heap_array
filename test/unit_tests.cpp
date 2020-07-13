@@ -123,6 +123,36 @@ TEST_CASE("Fill fills", "[fill]") {
   }
 }
 
+TEST_CASE("Swap swaps", "[swap]") {
+  vlrx::heap_array<int> test_array{1, 2, 3, 4, 5};
+  vlrx::heap_array<int> test_array1{6, 7, 8, 9, 10};
+  test_array.swap(test_array1);
+  REQUIRE(test_array == vlrx::heap_array<int>{6, 7, 8, 9, 10});
+  REQUIRE(test_array1 == vlrx::heap_array<int>{1, 2, 3, 4, 5});
+  swap(test_array1, test_array);
+  REQUIRE(test_array1 == vlrx::heap_array<int>{6, 7, 8, 9, 10});
+  REQUIRE(test_array == vlrx::heap_array<int>{1, 2, 3, 4, 5});
+}
+
+TEST_CASE("Comparison operator", "[heap_array][comparison]") {
+  REQUIRE(vlrx::heap_array<int>{1, 2, 3, 4, 5} <
+          vlrx::heap_array<int>{6, 7, 8, 9, 10});
+  REQUIRE(vlrx::heap_array<int>{6, 7, 8, 9, 10} >
+          vlrx::heap_array<int>{1, 2, 3, 4, 5});
+  REQUIRE(vlrx::heap_array<int>{6, 7, 8, 9, 10} >=
+          vlrx::heap_array<int>{1, 2, 3, 4, 5});
+  REQUIRE(vlrx::heap_array<int>{6, 7, 8, 9, 10} >=
+          vlrx::heap_array<int>{6, 7, 8, 9, 10});
+  REQUIRE(vlrx::heap_array<int>{1, 2, 3, 4, 5} <=
+          vlrx::heap_array<int>{6, 7, 8, 9, 10});
+  REQUIRE(vlrx::heap_array<int>{1, 2, 3, 4, 5} <=
+          vlrx::heap_array<int>{1, 2, 3, 4, 5});
+  REQUIRE(vlrx::heap_array<int>{1, 2, 3, 4, 5} ==
+          vlrx::heap_array<int>{1, 2, 3, 4, 5});
+  REQUIRE(vlrx::heap_array<int>{1, 2, 3, 4, 5} !=
+          vlrx::heap_array<int>{6, 7, 8, 9, 10});
+}
+
 TEST_CASE("Range based for loop", "[range for]") {
   vlrx::heap_array<int> test_array{1, 2, 3, 4, 5};
   std::uint64_t idx{};
