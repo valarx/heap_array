@@ -115,6 +115,14 @@ TEST_CASE("Reverse iterators are present", "[reverse][iterators]") {
   REQUIRE(*--const_test_array.rend() == 1);
 }
 
+TEST_CASE("Fill fills", "[fill]") {
+  vlrx::heap_array<int> test_array(5);
+  test_array.fill(1);
+  for (const auto &val : test_array) {
+    REQUIRE(val == 1);
+  }
+}
+
 TEST_CASE("Range based for loop", "[range for]") {
   vlrx::heap_array<int> test_array{1, 2, 3, 4, 5};
   std::uint64_t idx{};

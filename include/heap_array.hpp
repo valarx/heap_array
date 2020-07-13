@@ -160,15 +160,18 @@ public:
 
   heap_array(std::initializer_list<value_type> init) : storage_{}, size_{} {
     assert(init.size() <= std::numeric_limits<size_type>::max());
-    initialize_from(init.begin(), init.size());
+    initialize_from([&init](const size_type idx) { return init.begin()[idx]; },
+                    init.size());
   }
 
   heap_array(const heap_array &other) : storage_{}, size_{} {
-    initialize_from(other, other.size_);
+    initialize_from([&other](const size_type idx) { return other[idx]; },
+                    other.size_);
   }
 
   heap_array &operator=(const heap_array &other) {
-    initialize_from(other, other.size_);
+    initialize_from([&other](const size_type idx) { return other[idx]; },
+                    other.size_);
     return *this;
   }
 
@@ -289,6 +292,10 @@ public:
 
   size_type max_size() const noexcept { return size_; }
 
+  void fill(const_reference val) {
+    initialize_from([&val](const size_type) { return val; }, size_);
+  }
+
   ~heap_array() { reset_storage(); }
 
 private:
@@ -314,13 +321,13 @@ private:
     storage_ = nullptr;
   }
 
-  template <typename Other>
-  void initialize_from(Other &&other, const size_type size) {
+  template <typename ValueGenerator>
+  void initialize_from(ValueGenerator &&generator, const size_type size) {
     storage_type *storage{};
     if (size > 0) {
       storage = new storage_type[size];
       for (size_type idx{}; idx < size; ++idx) {
-        new (storage + idx) value_type(other[idx]);
+        new (storage + idx) value_type(generator(idx));
       }
     }
     reset_storage();
