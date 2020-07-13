@@ -21,7 +21,7 @@ target_link_options(unit_tests
 target_include_directories(unit_tests
     SYSTEM
         PRIVATE
-            ${PROJECT_SOURCE_DIR}/third_party
+            ${PROJECT_SOURCE_DIR}/third_party/catch2
 )
 
 target_link_libraries(unit_tests
