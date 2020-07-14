@@ -15,7 +15,8 @@ namespace vlrx {
 
 template <typename T, typename SizeType = std::uint64_t>
 class heap_array final {
-  template <bool is_const = false> class random_access_iterator final {
+  template <bool is_const = false>
+  class [[nodiscard]] random_access_iterator final {
   public:
     random_access_iterator() noexcept : ptr_{} {};
 
@@ -45,8 +46,8 @@ class heap_array final {
       return *(ptr_ + shift);
     }
 
-    friend random_access_iterator &
-    operator++(random_access_iterator &iter) noexcept {
+    friend random_access_iterator &operator++(
+        random_access_iterator &iter) noexcept {
       ++iter.ptr_;
       return iter;
     }
@@ -84,8 +85,8 @@ class heap_array final {
       return random_access_iterator{iter.ptr_ + shift};
     }
 
-    friend random_access_iterator
-    operator+(const difference_type shift, const random_access_iterator &iter) {
+    friend random_access_iterator operator+(
+        const difference_type shift, const random_access_iterator &iter) {
       return random_access_iterator{iter.ptr_ + shift};
     }
 
@@ -99,8 +100,8 @@ class heap_array final {
       return static_cast<difference_type>(lhs.ptr_ - rhs.ptr_);
     }
 
-    friend random_access_iterator
-    operator-(const difference_type shift, const random_access_iterator &iter) {
+    friend random_access_iterator operator-(
+        const difference_type shift, const random_access_iterator &iter) {
       return random_access_iterator{iter.ptr_ - shift};
     }
 
@@ -190,7 +191,8 @@ public:
       deallocate_storage();
       set_up_storage(buffer, other.size_);
     } else {
-      std::copy(other.begin(), other.end(), begin());
+      [[maybe_unused]] auto res =
+          std::copy(other.begin(), other.end(), begin());
     }
     return *this;
   }
@@ -212,47 +214,51 @@ public:
     return *this;
   }
 
-  const_reference at(const size_type pos) const {
+  [[nodiscard]] const_reference at(const size_type pos) const {
     if (pos >= size_) {
       throw std::out_of_range("Trying to access element which is out of range");
     }
     return *to_value_type_pointer(storage_ + pos);
   }
 
-  reference at(const size_type pos) {
+      [[nodiscard]] reference at(const size_type pos) {
     if (pos >= size_) {
       throw std::out_of_range("Trying to access element which is out of range");
     }
     return *to_value_type_pointer(storage_ + pos);
   }
 
-  const_reference operator[](const size_type pos) const noexcept {
+  [[nodiscard]] const_reference operator[](const size_type pos) const noexcept {
     assert(pos < size_);
     return *to_value_type_pointer(storage_ + pos);
   }
 
-  reference operator[](const size_type pos) noexcept {
+  [[nodiscard]] reference operator[](const size_type pos) noexcept {
     assert(pos < size_);
     return *to_value_type_pointer(storage_ + pos);
   }
 
-  reference front() noexcept { return *to_value_type_pointer(storage_); }
-
-  const_reference front() const noexcept {
+  [[nodiscard]] reference front() noexcept {
     return *to_value_type_pointer(storage_);
   }
 
-  reference back() noexcept {
+  [[nodiscard]] const_reference front() const noexcept {
+    return *to_value_type_pointer(storage_);
+  }
+
+  [[nodiscard]] reference back() noexcept {
     return *to_value_type_pointer(storage_ + size_ - 1);
   }
 
-  const_reference back() const noexcept {
+  [[nodiscard]] const_reference back() const noexcept {
     return *to_value_type_pointer(storage_ + size_ - 1);
   }
 
-  pointer data() noexcept { return to_value_type_pointer(storage_); }
+  [[nodiscard]] pointer data() noexcept {
+    return to_value_type_pointer(storage_);
+  }
 
-  const_pointer data() const noexcept {
+  [[nodiscard]] const_pointer data() const noexcept {
     return to_value_type_pointer(storage_);
   }
 
@@ -308,11 +314,11 @@ public:
         const_iterator{to_value_type_pointer(storage_)}};
   }
 
-  bool empty() const noexcept { return size_ == 0; }
+  [[nodiscard]] bool empty() const noexcept { return size_ == 0; }
 
-  size_type size() const noexcept { return size_; }
+  [[nodiscard]] size_type size() const noexcept { return size_; }
 
-  size_type max_size() const noexcept { return size_; }
+  [[nodiscard]] size_type max_size() const noexcept { return size_; }
 
   void swap(heap_array &other) {
     const auto temp_storage = storage_;
@@ -378,8 +384,8 @@ private:
     storage_ = nullptr;
   }
 
-  void set_up_storage(storage_type *storage, const size_type size) noexcept {
-    storage_ = storage;
+  void set_up_storage(storage_type *buffer, const size_type size) noexcept {
+    storage_ = buffer;
     size_ = size;
   }
 
