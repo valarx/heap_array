@@ -1,4 +1,3 @@
-
 #define CATCH_CONFIG_MAIN
 #include "catch.hpp"
 
@@ -6,24 +5,39 @@
 
 #include <cstdint>
 
-TEST_CASE("It is possible to create heap_array by providing size",
-          "[construction][uninitialized]") {
-  const vlrx::heap_array<int> test_array(5);
-  REQUIRE(test_array.size() == 5);
-  REQUIRE(test_array.max_size() == 5);
-}
+struct mock_struct {
+  explicit mock_struct(std::uint16_t *counter) : counter_{counter} {}
+  mock_struct(const mock_struct &other) : counter_{other.counter_} {}
+  mock_struct &operator=(const mock_struct &other) {
+    counter_ = other.counter_;
+    return *this;
+  }
+  mock_struct &operator=(mock_struct &&other) {
+    counter_ = other.counter_;
+    other.counter_ = nullptr;
+    return *this;
+  }
+  ~mock_struct() {
+    if (counter_) {
+      ++(*counter_);
+    }
+  }
+  std::uint16_t *counter_;
+};
 
 TEST_CASE("It is possible to create heap_array from initializer list",
           "[construction][initializer list][pod]") {
-  vlrx::heap_array<int> test_array{1, 2, 3, 4, 5};
-  REQUIRE(test_array.size() == 5);
-  REQUIRE(test_array[0] == 1);
-  REQUIRE(test_array[1] == 2);
-  REQUIRE(test_array[2] == 3);
-  REQUIRE(test_array[3] == 4);
-  REQUIRE(test_array[4] == 5);
-  test_array[4] = 3;
-  REQUIRE(test_array[4] == 3);
+  {
+    vlrx::heap_array<int> test_array{1, 2, 3, 4, 5};
+    REQUIRE(test_array.size() == 5);
+    REQUIRE(test_array[0] == 1);
+    REQUIRE(test_array[1] == 2);
+    REQUIRE(test_array[2] == 3);
+    REQUIRE(test_array[3] == 4);
+    REQUIRE(test_array[4] == 5);
+    test_array[4] = 3;
+    REQUIRE(test_array[4] == 3);
+  }
 }
 
 TEST_CASE("Checked access throws on out of bounds access",
@@ -45,7 +59,7 @@ TEST_CASE(
     "[empty]") {
   const vlrx::heap_array<int> test_array{1, 2, 3};
   REQUIRE(test_array.empty() == false);
-  const vlrx::heap_array<int> test_array1(0);
+  const vlrx::heap_array<int> test_array1{};
   REQUIRE(test_array1.empty() == true);
 }
 
@@ -131,14 +145,6 @@ TEST_CASE("Reverse iterators are present", "[reverse][iterators]") {
   REQUIRE(*--const_test_array.rend() == 1);
 }
 
-TEST_CASE("Fill fills", "[fill]") {
-  vlrx::heap_array<int> test_array(5);
-  test_array.fill(1);
-  for (const auto &val : test_array) {
-    REQUIRE(val == 1);
-  }
-}
-
 TEST_CASE("Swap swaps", "[swap]") {
   vlrx::heap_array<int> test_array{1, 2, 3, 4, 5};
   vlrx::heap_array<int> test_array1{6, 7, 8, 9, 10};
@@ -178,20 +184,80 @@ TEST_CASE("Range based for loop", "[range for]") {
   }
 }
 
-struct mock_struct {
-  explicit mock_struct(std::uint16_t &counter) : counter_{counter} {}
-  ~mock_struct() { ++counter_; }
-  std::uint16_t &counter_;
-};
-
 TEST_CASE("Destructors are properly called, there is -> operator for iterator",
           "[destructors][arrow operator][iterator]") {
-  std::uint16_t counter{};
   {
-    vlrx::heap_array<mock_struct> test_array{
-        mock_struct{counter}, mock_struct{counter}, mock_struct{counter}};
-    REQUIRE(test_array.begin()->counter_ == (*test_array.begin()).counter_);
+    std::uint16_t counter{};
+    {
+      vlrx::heap_array<mock_struct> test_array{
+          mock_struct{&counter}, mock_struct{&counter}, mock_struct{&counter}};
+      REQUIRE(test_array.begin()->counter_ == (*test_array.begin()).counter_);
+    }
+    REQUIRE(counter == 6); // struct destructor is called twice, once for
+                           // initializer list, once for heap_array
   }
-  REQUIRE(counter == 6); // struct destructor is called twice, once for
-                         // initializer list, once for heap vector
+  {
+    std::uint16_t counter{};
+    std::uint16_t counter1{};
+    {
+      vlrx::heap_array<mock_struct> test_array{mock_struct{&counter},
+                                               mock_struct{&counter}};
+      REQUIRE(test_array.begin()->counter_ == (*test_array.begin()).counter_);
+      test_array[0] = mock_struct{&counter1};
+    }
+    REQUIRE(counter ==
+            3); // struct destructor is called twice, once for
+                // initializer list, once for heap_array, but one of the
+                // elements of heap array is now pointing to different counter
+    REQUIRE(counter1 == 1); // this struct destructor is called only once
+  }
+}
+
+TEST_CASE("Assignment to the heap array does not always cause reallocation",
+          "[assignment][reallocation][destructors][move assignment]") {
+  {
+    std::uint16_t counter{};
+    std::uint16_t counter1{};
+    {
+      vlrx::heap_array<mock_struct> test_array{mock_struct{&counter},
+                                               mock_struct{&counter}};
+      vlrx::heap_array<mock_struct> copy_from_array{mock_struct{&counter1},
+                                                    mock_struct{&counter1}};
+      test_array = copy_from_array;
+    }
+    REQUIRE(counter == 2);
+    REQUIRE(counter1 == 6); // all copies are pointing to the same counter (so,
+                            // 4 total) + 2 from init list
+  }
+  {
+    std::uint16_t counter{};
+    std::uint16_t counter1{};
+    {
+      vlrx::heap_array<mock_struct> test_array{mock_struct{&counter},
+                                               mock_struct{&counter}};
+      vlrx::heap_array<mock_struct> copy_from_array{mock_struct{&counter1},
+                                                    mock_struct{&counter1},
+                                                    mock_struct{&counter1}};
+      test_array = copy_from_array;
+    }
+    REQUIRE(counter == 4); // reallocatio nhappens, hence destructors are called
+                           // + 2 from init list
+    REQUIRE(counter1 == 9); // all copies are pointing to the same counter (so,
+                            // 6 total) + 3 from init list
+  }
+  {
+    std::uint16_t counter{};
+    std::uint16_t counter1{};
+    {
+      vlrx::heap_array<mock_struct> test_array{mock_struct{&counter},
+                                               mock_struct{&counter}};
+      vlrx::heap_array<mock_struct> move_from_array{mock_struct{&counter1},
+                                                    mock_struct{&counter1},
+                                                    mock_struct{&counter1}};
+      test_array = std::move(move_from_array);
+    }
+    REQUIRE(counter == 4); // reallocation happens, hence destructors are called
+                           // + 2 from init list
+    REQUIRE(counter1 == 6); // 3 from array, 3 from initl list
+  }
 }

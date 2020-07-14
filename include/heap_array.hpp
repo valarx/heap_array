@@ -154,26 +154,44 @@ public:
   using reverse_iterator = std::reverse_iterator<iterator>;
   using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
-  explicit heap_array(const size_type size) : storage_{}, size_{size} {
-    if (size_ > 0) {
-      storage_ = new storage_type[size_];
-    }
-  }
-
   heap_array(std::initializer_list<value_type> init) : storage_{}, size_{} {
     assert(init.size() <= std::numeric_limits<size_type>::max());
-    initialize_from([&init](const size_type idx) { return init.begin()[idx]; },
-                    init.size());
+    auto buffer = allocate_buffer(static_cast<size_type>(init.size()));
+    try {
+      fill_buffer(init.begin(), buffer, static_cast<size_type>(init.size()));
+    } catch (...) {
+      delete[] buffer;
+      throw;
+    }
+    set_up_storage(buffer, static_cast<size_type>(init.size()));
   }
 
   heap_array(const heap_array &other) : storage_{}, size_{} {
-    initialize_from([&other](const size_type idx) { return other[idx]; },
-                    other.size_);
+    auto buffer = allocate_buffer(other.size_);
+    try {
+      fill_buffer(other.begin(), buffer, other.size_);
+    } catch (...) {
+      delete[] buffer;
+      throw;
+    }
+    set_up_storage(buffer, other.size_);
   }
 
   heap_array &operator=(const heap_array &other) {
-    initialize_from([&other](const size_type idx) { return other[idx]; },
-                    other.size_);
+    if (other.size_ != size_) {
+      auto buffer = allocate_buffer(other.size_);
+      try {
+        fill_buffer(other.begin(), buffer, other.size_);
+      } catch (...) {
+        delete[] buffer;
+        throw;
+      }
+      destroy_stored_objects();
+      deallocate_storage();
+      set_up_storage(buffer, other.size_);
+    } else {
+      std::copy(other.begin(), other.end(), begin());
+    }
     return *this;
   }
 
@@ -185,6 +203,8 @@ public:
   }
 
   heap_array<value_type, size_type> &operator=(heap_array &&other) {
+    destroy_stored_objects();
+    deallocate_storage();
     size_ = static_cast<size_type>(other.size_);
     storage_ = other.storage_;
     other.size_ = 0;
@@ -194,14 +214,14 @@ public:
 
   const_reference at(const size_type pos) const {
     if (pos >= size_) {
-      throw std::out_of_range("Tryin to access element which is out of range");
+      throw std::out_of_range("Trying to access element which is out of range");
     }
     return *to_value_type_pointer(storage_ + pos);
   }
 
   reference at(const size_type pos) {
     if (pos >= size_) {
-      throw std::out_of_range("Tryin to access element which is out of range");
+      throw std::out_of_range("Trying to access element which is out of range");
     }
     return *to_value_type_pointer(storage_ + pos);
   }
@@ -294,10 +314,6 @@ public:
 
   size_type max_size() const noexcept { return size_; }
 
-  void fill(const_reference val) {
-    initialize_from([&val](const size_type) { return val; }, size_);
-  }
-
   void swap(heap_array &other) {
     const auto temp_storage = storage_;
     const auto temp_size = size_;
@@ -307,7 +323,12 @@ public:
     other.storage_ = temp_storage;
   }
 
-  ~heap_array() { reset_storage(); }
+  ~heap_array() {
+    if constexpr (std::is_trivially_destructible_v<value_type> == false) {
+      destroy_stored_objects();
+    }
+    deallocate_storage();
+  }
 
   template <typename VType, typename SType>
   friend void swap(heap_array<VType, SType> &lhs,
@@ -345,27 +366,36 @@ private:
     return std::launder(reinterpret_cast<value_type *>(storage_pointer));
   }
 
-  void reset_storage() noexcept {
+  void destroy_stored_objects() noexcept {
     for (size_type i{}; i < size_; ++i) {
       to_value_type_pointer(storage_ + i)->~value_type();
     }
+  }
+
+  void deallocate_storage() noexcept {
     delete[] storage_;
     size_ = 0;
     storage_ = nullptr;
   }
 
-  template <typename ValueGenerator>
-  void initialize_from(ValueGenerator &&generator, const size_type size) {
-    storage_type *storage{};
-    if (size > 0) {
-      storage = new storage_type[size];
-      for (size_type idx{}; idx < size; ++idx) {
-        new (storage + idx) value_type(generator(idx));
-      }
-    }
-    reset_storage();
-    size_ = size;
+  void set_up_storage(storage_type *storage, const size_type size) noexcept {
     storage_ = storage;
+    size_ = size;
+  }
+
+  [[nodiscard]] storage_type *allocate_buffer(const size_type size) {
+    storage_type *buffer{};
+    if (size > 0) {
+      buffer = new storage_type[size];
+    }
+    return buffer;
+  }
+
+  template <typename Input>
+  void fill_buffer(Input &&iter, storage_type *&storage, const size_type size) {
+    for (size_type idx{}; idx < size; ++idx) {
+      new (storage + idx) value_type(iter[idx]);
+    }
   }
 };
 
