@@ -25,12 +25,17 @@ class heap_array final {
         typename std::conditional_t<is_const, const value_type *, value_type *>;
     using reference =
         typename std::conditional_t<is_const, const value_type &, value_type &>;
+    using const_pointer = const value_type *;
     using const_reference = const value_type &;
     using iterator_category = std::random_access_iterator_tag;
 
     reference operator*() noexcept { return *ptr_; }
 
     const_reference operator*() const noexcept { return *ptr_; }
+
+    pointer operator->() noexcept { return ptr_; }
+
+    const_pointer operator->() const noexcept { return ptr_; }
 
     reference operator[](const difference_type shift) noexcept {
       return *(ptr_ + shift);
@@ -53,29 +58,25 @@ class heap_array final {
       return retval;
     }
 
-    friend random_access_iterator &
-    operator--(random_access_iterator &iter) noexcept {
-      --iter.ptr_;
-      return iter;
+    random_access_iterator &operator--() noexcept {
+      --ptr_;
+      return *this;
     }
 
-    friend random_access_iterator operator--(random_access_iterator &iter,
-                                             int) noexcept {
-      auto retval = iter;
-      --iter.ptr_;
+    random_access_iterator operator--(int) noexcept {
+      auto retval = *this;
+      --(*this).ptr_;
       return retval;
     }
 
-    friend random_access_iterator &operator+=(random_access_iterator &iter,
-                                              const difference_type shift) {
-      iter.ptr_ += shift;
-      return iter;
+    random_access_iterator &operator+=(const difference_type shift) {
+      (*this).ptr_ += shift;
+      return *this;
     }
 
-    friend random_access_iterator &operator-=(random_access_iterator &iter,
-                                              const difference_type shift) {
-      iter.ptr_ -= shift;
-      return iter;
+    random_access_iterator &operator-=(const difference_type shift) {
+      (*this).ptr_ -= shift;
+      return *this;
     }
 
     friend random_access_iterator operator+(const random_access_iterator &iter,
@@ -306,59 +307,29 @@ public:
     other.storage_ = temp_storage;
   }
 
-  template <typename VType, typename SType>
-  friend void swap(heap_array<VType, SType> &lhs,
-                   heap_array<VType, SType> &rhs) {
-    lhs.swap(rhs);
-  }
-
   ~heap_array() { reset_storage(); }
 
   template <typename VType, typename SType>
+  friend void swap(heap_array<VType, SType> &lhs,
+                   heap_array<VType, SType> &rhs);
+  template <typename VType, typename SType>
   friend bool operator==(const heap_array<VType, SType> &lhs,
-                         const heap_array<VType, SType> &rhs) {
-    return lhs.size_ == rhs.size_ && [&lhs, &rhs]() {
-      SType idx{};
-      for (const auto &val : lhs) {
-        if (val != rhs[idx]) {
-          return false;
-        }
-        ++idx;
-      }
-      return true;
-    }();
-  }
-
+                         const heap_array<VType, SType> &rhs);
   template <typename VType, typename SType>
   friend bool operator!=(const heap_array<VType, SType> &lhs,
-                         const heap_array<VType, SType> &rhs) {
-    return !(lhs == rhs);
-  }
-
+                         const heap_array<VType, SType> &rhs);
   template <typename VType, typename SType>
   friend bool operator<(const heap_array<VType, SType> &lhs,
-                        const heap_array<VType, SType> &rhs) {
-    return std::lexicographical_compare(lhs.begin(), lhs.end(), rhs.begin(),
-                                        rhs.end());
-  }
-
+                        const heap_array<VType, SType> &rhs);
   template <typename VType, typename SType>
   friend bool operator>(const heap_array<VType, SType> &lhs,
-                        const heap_array<VType, SType> &rhs) {
-    return rhs < lhs;
-  }
-
+                        const heap_array<VType, SType> &rhs);
   template <typename VType, typename SType>
   friend bool operator<=(const heap_array<VType, SType> &lhs,
-                         const heap_array<VType, SType> &rhs) {
-    return !(lhs > rhs);
-  }
-
+                         const heap_array<VType, SType> &rhs);
   template <typename VType, typename SType>
   friend bool operator>=(const heap_array<VType, SType> &lhs,
-                         const heap_array<VType, SType> &rhs) {
-    return !(lhs < rhs);
-  }
+                         const heap_array<VType, SType> &rhs);
 
 private:
   using storage_type = typename std::aligned_storage<sizeof(value_type),
@@ -397,5 +368,48 @@ private:
     storage_ = storage;
   }
 };
+
+template <typename VType, typename SType>
+inline void swap(heap_array<VType, SType> &lhs, heap_array<VType, SType> &rhs) {
+  lhs.swap(rhs);
+}
+
+template <typename VType, typename SType>
+inline bool operator==(const heap_array<VType, SType> &lhs,
+                       const heap_array<VType, SType> &rhs) {
+  return lhs.size_ == rhs.size_ &&
+         std::equal(lhs.begin(), lhs.end(), rhs.begin());
+}
+
+template <typename VType, typename SType>
+inline bool operator!=(const heap_array<VType, SType> &lhs,
+                       const heap_array<VType, SType> &rhs) {
+  return !(lhs == rhs);
+}
+
+template <typename VType, typename SType>
+inline bool operator<(const heap_array<VType, SType> &lhs,
+                      const heap_array<VType, SType> &rhs) {
+  return std::lexicographical_compare(lhs.begin(), lhs.end(), rhs.begin(),
+                                      rhs.end());
+}
+
+template <typename VType, typename SType>
+inline bool operator>(const heap_array<VType, SType> &lhs,
+                      const heap_array<VType, SType> &rhs) {
+  return rhs < lhs;
+}
+
+template <typename VType, typename SType>
+inline bool operator<=(const heap_array<VType, SType> &lhs,
+                       const heap_array<VType, SType> &rhs) {
+  return !(lhs > rhs);
+}
+
+template <typename VType, typename SType>
+inline bool operator>=(const heap_array<VType, SType> &lhs,
+                       const heap_array<VType, SType> &rhs) {
+  return !(lhs < rhs);
+}
 
 } // namespace vlrx
