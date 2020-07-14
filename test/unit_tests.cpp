@@ -1,7 +1,10 @@
+
 #define CATCH_CONFIG_MAIN
 #include "catch.hpp"
 
 #include "heap_array.hpp"
+
+#include <cstdint>
 
 TEST_CASE("It is possible to create heap_array by providing size",
           "[construction][uninitialized]") {
@@ -86,15 +89,28 @@ TEST_CASE("It is possible to add or substract number from the iterator to get"
 }
 
 TEST_CASE("Comparison operators for iterator", "[iterator][comparison]") {
-  const vlrx::heap_array<int> test_array{1, 2, 3, 4, 5};
-  REQUIRE(test_array.begin() != test_array.end());
-  REQUIRE(test_array.begin() == test_array.begin());
-  REQUIRE(test_array.begin() < test_array.end());
-  REQUIRE(test_array.end() > test_array.begin());
-  REQUIRE(test_array.begin() <= test_array.begin());
-  REQUIRE(test_array.begin() >= test_array.begin());
-  REQUIRE(test_array.begin() <= test_array.begin() + 1);
-  REQUIRE(test_array.begin() + 1 >= test_array.begin());
+  {
+    const vlrx::heap_array<int> test_array{1, 2, 3, 4, 5};
+    REQUIRE(test_array.begin() != test_array.end());
+    REQUIRE(test_array.begin() == test_array.begin());
+    REQUIRE(test_array.begin() < test_array.end());
+    REQUIRE(test_array.end() > test_array.begin());
+    REQUIRE(test_array.begin() <= test_array.begin());
+    REQUIRE(test_array.begin() >= test_array.begin());
+    REQUIRE(test_array.begin() <= test_array.begin() + 1);
+    REQUIRE(test_array.begin() + 1 >= test_array.begin());
+  }
+  {
+    vlrx::heap_array<int> test_array{1, 2, 3, 4, 5};
+    REQUIRE(test_array.begin() != test_array.end());
+    REQUIRE(test_array.begin() == test_array.begin());
+    REQUIRE(test_array.begin() < test_array.end());
+    REQUIRE(test_array.end() > test_array.begin());
+    REQUIRE(test_array.begin() <= test_array.begin());
+    REQUIRE(test_array.begin() >= test_array.begin());
+    REQUIRE(test_array.begin() <= test_array.begin() + 1);
+    REQUIRE(test_array.begin() + 1 >= test_array.begin());
+  }
 }
 
 TEST_CASE("Copy/move constructors/assignment operators work", "[copy][move]") {
@@ -160,4 +176,22 @@ TEST_CASE("Range based for loop", "[range for]") {
     REQUIRE(val == test_array[idx]);
     ++idx;
   }
+}
+
+struct mock_struct {
+  explicit mock_struct(std::uint16_t &counter) : counter_{counter} {}
+  ~mock_struct() { ++counter_; }
+  std::uint16_t &counter_;
+};
+
+TEST_CASE("Destructors are properly called, there is -> operator for iterator",
+          "[destructors][arrow operator][iterator]") {
+  std::uint16_t counter{};
+  {
+    vlrx::heap_array<mock_struct> test_array{
+        mock_struct{counter}, mock_struct{counter}, mock_struct{counter}};
+    REQUIRE(test_array.begin()->counter_ == (*test_array.begin()).counter_);
+  }
+  REQUIRE(counter == 6); // struct destructor is called twice, once for
+                         // initializer list, once for heap vector
 }
