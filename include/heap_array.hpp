@@ -20,7 +20,7 @@ class heap_array final {
   public:
     random_access_iterator() noexcept : ptr_{} {};
 
-    using difference_type = std::int64_t;
+    using difference_type = std::ptrdiff_t;
     using value_type = T;
     using pointer =
         typename std::conditional_t<is_const, const value_type *, value_type *>;
