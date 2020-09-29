@@ -20,6 +20,52 @@ class heap_array final {
   public:
     random_access_iterator() noexcept : ptr_{} {};
 
+    random_access_iterator(const random_access_iterator &other)
+        : ptr_{other.ptr_} {}
+
+    random_access_iterator(random_access_iterator && other) : ptr_{other.ptr_} {
+      other.ptr_ = nullptr;
+    }
+
+    template <bool is_const_ = is_const,
+              typename std::enable_if<is_const_, int>::type = 1>
+    random_access_iterator(const random_access_iterator<false> &other)
+        : ptr_{other.ptr_} {}
+
+    template <bool is_const_ = is_const,
+              typename std::enable_if<is_const_, int>::type = 1>
+    random_access_iterator(random_access_iterator<false> && other)
+        : ptr_{other.ptr_} {
+      other.ptr_ = nullptr;
+    }
+
+    random_access_iterator &operator=(const random_access_iterator &other) {
+      ptr_ = other.ptr_;
+      return *this;
+    }
+
+    random_access_iterator &operator=(random_access_iterator &&other) {
+      ptr_ = other.ptr_;
+      other.ptr_ = nullptr;
+      return *this;
+    }
+
+    template <bool is_const_ = is_const,
+              typename std::enable_if<is_const_, int>::type = 1>
+    random_access_iterator &operator=(
+        const random_access_iterator<false> &other) {
+      ptr_ = other.ptr_;
+      return *this;
+    }
+
+    template <bool is_const_ = is_const,
+              typename std::enable_if<is_const_, int>::type = 1>
+    random_access_iterator &operator=(random_access_iterator<false> &&other) {
+      ptr_ = other.ptr_;
+      other.ptr_ = nullptr;
+      return *this;
+    }
+
     using difference_type = std::ptrdiff_t;
     using value_type = T;
     using pointer =

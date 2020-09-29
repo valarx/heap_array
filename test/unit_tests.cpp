@@ -261,3 +261,10 @@ TEST_CASE("Assignment to the heap array does not always cause reallocation",
     REQUIRE(counter1 == 6); // 3 from array, 3 from initl list
   }
 }
+
+TEST_CASE("Non-const iterator is convertible to const iterator",
+          "[iterator][const iterator]") {
+  vlrx::heap_array<int> array{1, 2, 3};
+  vlrx::heap_array<int>::const_iterator iter = array.begin();
+  REQUIRE(*iter == *array.begin());
+}
